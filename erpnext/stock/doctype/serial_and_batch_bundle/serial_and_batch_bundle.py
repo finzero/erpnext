@@ -899,6 +899,10 @@ def get_serial_batch_ledgers(item_code=None, docstatus=None, voucher_no=None, na
 		fields=[
 			"`tabSerial and Batch Bundle`.`name`",
 			"`tabSerial and Batch Bundle`.`item_code`",
+			"`tabSerial and Batch Bundle`.`custom_uom2`",
+			"`tabSerial and Batch Entry`.`custom_uom2`",
+			"`tabSerial and Batch Entry`.`custom_qty2`",
+			"`tabSerial and Batch Entry`.`custom_multiplier`",
 			"`tabSerial and Batch Entry`.`qty`",
 			"`tabSerial and Batch Entry`.`warehouse`",
 			"`tabSerial and Batch Entry`.`batch_no`",
@@ -987,6 +991,9 @@ def create_serial_batch_no_ledgers(entries, child_row, parent_doc, warehouse=Non
 			{
 				"qty": (row.qty or 1.0) * (1 if type_of_transaction == "Inward" else -1),
 				"warehouse": warehouse,
+				"custom_multiplier": row.custom_multiplier,
+				"custom_qty2": row.custom_qty2,
+				"custom_uom2": row.custom_uom2,
 				"batch_no": row.batch_no,
 				"serial_no": row.serial_no,
 			},
@@ -1017,6 +1024,9 @@ def update_serial_batch_no_ledgers(entries, child_row, parent_doc, warehouse=Non
 				"warehouse": warehouse or d.get("warehouse"),
 				"batch_no": d.get("batch_no"),
 				"serial_no": d.get("serial_no"),
+				"custom_multiplier": d.get("custom_multiplier"),
+				"custom_qty2": d.get("custom_qty2"),
+				"custom_uom2": d.get("custom_uom2"),
 			},
 		)
 
@@ -1439,6 +1449,8 @@ def get_qty_based_available_batches(available_batches, qty):
 					{
 						"batch_no": batch.batch_no,
 						"qty": batch_qty,
+						"custom_qty2": 0,
+						"custom_multiplier": batch.multiplier,
 						"warehouse": batch.warehouse,
 					}
 				)
@@ -1450,6 +1462,8 @@ def get_qty_based_available_batches(available_batches, qty):
 					{
 						"batch_no": batch.batch_no,
 						"qty": qty,
+						"custom_qty2": 0,
+						"custom_multiplier": batch.multiplier,
 						"warehouse": batch.warehouse,
 					}
 				)
@@ -1486,6 +1500,8 @@ def get_available_batches(kwargs):
 		.inner_join(batch_table)
 		.on(batch_ledger.batch_no == batch_table.name)
 		.select(
+			batch_table.qty2,
+			batch_table.multiplier,
 			batch_ledger.batch_no,
 			batch_ledger.warehouse,
 			Sum(batch_ledger.qty).as_("qty"),

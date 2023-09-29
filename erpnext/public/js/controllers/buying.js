@@ -363,7 +363,9 @@ erpnext.buying = {
 										if (r) {
 											let update_values = {
 												"serial_and_batch_bundle": r.name,
-												"qty": Math.abs(r.total_qty)
+												"qty": Math.abs(r.total_qty),
+												custom_qty2: r.custom_qty2,
+												custom_uom2: r.custom_uom2,
 											}
 
 											if (r.warehouse) {
@@ -398,7 +400,9 @@ erpnext.buying = {
 										if (r) {
 											let update_values = {
 												"serial_and_batch_bundle": r.name,
-												"rejected_qty": Math.abs(r.total_qty)
+												"rejected_qty": Math.abs(r.total_qty),
+												custom_qty2: r.custom_qty2,
+												custom_uom2: r.custom_uom2,
 											}
 
 											if (r.warehouse) {
