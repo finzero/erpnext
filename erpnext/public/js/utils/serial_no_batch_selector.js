@@ -391,13 +391,11 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 					in_list_view: 1,
 					onchange: function (e) {
 						const gridRow = e.target.closest(".grid-row");
-						const rowIndex = gridRow.getAttribute("data-name");
+						const rowIndex = gridRow.getAttribute("data-idx") - 1;
 						const grid = cur_dialog.fields_dict.entries.grid;
 						const row = grid.get_grid_row(rowIndex);
-
-						const field_value = (field) => {
-							return row.get_field(field).get_value();
-						};
+						
+						const field_value = (field) =>  row.get_field(field).get_value();
 
 						const custom_qty2 = field_value("custom_qty2");
 						const multiplier = field_value("custom_multiplier");
