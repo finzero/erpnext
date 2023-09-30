@@ -992,7 +992,7 @@ def create_serial_batch_no_ledgers(entries, child_row, parent_doc, warehouse=Non
 				"qty": (row.qty or 1.0) * (1 if type_of_transaction == "Inward" else -1),
 				"warehouse": warehouse,
 				"custom_multiplier": row.custom_multiplier,
-				"custom_qty2": row.custom_qty2,
+				"custom_qty2": (row.custom_qty2) * (1 if doc.type_of_transaction == "Inward" else -1),
 				"custom_uom2": row.custom_uom2,
 				"batch_no": row.batch_no,
 				"serial_no": row.serial_no,
@@ -1025,7 +1025,7 @@ def update_serial_batch_no_ledgers(entries, child_row, parent_doc, warehouse=Non
 				"batch_no": d.get("batch_no"),
 				"serial_no": d.get("serial_no"),
 				"custom_multiplier": d.get("custom_multiplier"),
-				"custom_qty2": d.get("custom_qty2"),
+				"custom_qty2": d.get("custom_qty2") * (1 if doc.type_of_transaction == "Inward" else -1),
 				"custom_uom2": d.get("custom_uom2"),
 			},
 		)
