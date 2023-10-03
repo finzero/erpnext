@@ -439,34 +439,36 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 	}
 
 	get_auto_data() {
-		let { qty, based_on, custom_qty2, custom_uom2 } =
-			this.dialog.get_values();
+		return true;
+		// disable autodata, we want to input batch manually
+		// let { qty, based_on, custom_qty2, custom_uom2 } =
+		// 	this.dialog.get_values();
 
-		if (!based_on) {
-			based_on = "FIFO";
-		}
+		// if (!based_on) {
+		// 	based_on = "FIFO";
+		// }
 
-		if (qty) {
-			frappe.call({
-				method: "erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle.get_auto_data",
-				args: {
-					item_code: this.item.item_code,
-					warehouse: this.item.warehouse || this.item.s_warehouse,
-					has_serial_no: this.item.has_serial_no,
-					has_batch_no: this.item.has_batch_no,
-					qty: qty,
-					custom_qty2: custom_qty2,
-					custom_uom2: custom_uom2,
-					based_on: based_on,
-				},
-				callback: (r) => {
-					if (r.message) {
-						this.dialog.fields_dict.entries.df.data = r.message;
-						this.dialog.fields_dict.entries.grid.refresh();
-					}
-				},
-			});
-		}
+		// if (qty) {
+		// 	frappe.call({
+		// 		method: "erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle.get_auto_data",
+		// 		args: {
+		// 			item_code: this.item.item_code,
+		// 			warehouse: this.item.warehouse || this.item.s_warehouse,
+		// 			has_serial_no: this.item.has_serial_no,
+		// 			has_batch_no: this.item.has_batch_no,
+		// 			qty: qty,
+		// 			custom_qty2: custom_qty2,
+		// 			custom_uom2: custom_uom2,
+		// 			based_on: based_on,
+		// 		},
+		// 		callback: (r) => {
+		// 			if (r.message) {
+		// 				this.dialog.fields_dict.entries.df.data = r.message;
+		// 				this.dialog.fields_dict.entries.grid.refresh();
+		// 			}
+		// 		},
+		// 	});
+		// }
 	}
 
 	update_serial_batch_no() {
