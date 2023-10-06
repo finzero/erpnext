@@ -40,6 +40,13 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		setTimeout(() => {
 			that.update_total_qty();
 			that.update_total_roll();
+
+			// cur_dialog.wrapper[0].querySelector('[data-action=delete_rows]')
+			$(cur_dialog.wrapper).find('[data-action=delete_rows]').on('click',()=>{
+				that.update_total_qty();
+				that.update_total_roll();
+			})
+
 		}, 1000);
 	}
 
@@ -613,17 +620,39 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 	}
 
 	update_total_roll() {
-		const entries = cur_dialog.fields_dict.entries.get_value();
-		const total_roll = entries.reduce(
-			(acc, cur) => acc + cur.custom_qty2,
-			0
-		);
-		cur_dialog.fields_dict.custom_total_qty2.set_value(total_roll);
+		setTimeout(() => {
+			const grid_row_el = cur_dialog.wrapper[0].querySelectorAll('.grid-row[data-idx]')
+			const available_idx = Array.from(grid_row_el, (el)=>Number(el.getAttribute('data-idx')));
+			
+			const entries = cur_dialog.fields_dict.entries.get_value();
+			const total_roll = entries.reduce(
+				(acc, cur) => {
+					if(available_idx.includes(cur.idx)){
+						return acc + cur.custom_qty2
+					} else {
+						return 0;
+					}
+				},
+				0
+			);
+			cur_dialog.fields_dict.custom_total_qty2.set_value(total_roll);
+		}, 500)	
 	}
 
 	update_total_qty() {
-		const entries = cur_dialog.fields_dict.entries.get_value();
-		const total_qty = entries.reduce((acc, cur) => acc + cur.qty, 0);
-		cur_dialog.fields_dict.total_qty.set_value(total_qty);
+		setTimeout(() => {
+			const grid_row_el = cur_dialog.wrapper[0].querySelectorAll('.grid-row[data-idx]')
+			const available_idx = Array.from(grid_row_el, (el)=>Number(el.getAttribute('data-idx')));
+	
+			const entries = cur_dialog.fields_dict.entries.get_value();
+			const total_qty = entries.reduce((acc, cur) => {
+				if(available_idx.includes(cur.idx)){
+					return acc + cur.qty
+				} else {
+					return 0;
+				}
+			}, 0);
+			cur_dialog.fields_dict.total_qty.set_value(total_qty);
+		}, 500);
 	}
 };
