@@ -420,7 +420,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 					fieldname: "qty",
 					label: __("Quantity"),
 					in_list_view: 1,
-					read_only: true,
 					onchange: this.update_total_qty,
 				});
 			}
