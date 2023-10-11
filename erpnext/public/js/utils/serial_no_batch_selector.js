@@ -502,6 +502,21 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		let warehouse = this.dialog.get_value("warehouse");
 		let custom_uom2 = this.dialog.get_value("custom_uom2");
 		entries = entries.map((entry) => ({ ...entry, custom_uom2 }));
+		
+		// special case for batch, allow multiple same batch no input
+		// accumulate qty & custom__qty2 into unique object data
+		let unique_batch_no = [];
+		let unique_entries = [];
+		entries.forEach((d)=>{
+			if(!unique_batch_no.includes(d.batch_no)){
+				unique_entries.push(d);
+				unique_batch_no.push(d.batch_no);
+			} else {
+				const batch = unique_entries.find((ud)=>ud.batch_no===d.batch_no);
+				batch.custom_qty2 += d.custom_qty2;
+				batch.qty += d.qty;
+			}
+		})
 
 		if ((entries && !entries.length) || !entries) {
 			frappe.throw(__("Please add atleast one Serial No / Batch No"));
@@ -511,7 +526,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 			.call({
 				method: "erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle.add_serial_batch_ledgers",
 				args: {
-					entries: entries,
+					entries: unique_entries,
 					child_row: this.item,
 					doc: this.frm.doc,
 					warehouse: warehouse,
