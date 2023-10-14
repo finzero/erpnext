@@ -41,6 +41,8 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 			that.update_total_qty();
 			that.update_total_roll();
 
+			document.querySelector('.modal-dialog').classList.add('modal-lg');
+
 			// cur_dialog.wrapper[0].querySelector('[data-action=delete_rows]')
 			$(cur_dialog.wrapper).find('[data-action=delete_rows]').on('click',()=>{
 				that.update_total_qty();
