@@ -346,9 +346,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 						const fields = row.on_grid_fields_dict;
 						const item_code = row.doc.batch_no;
 
-						let batch = frappe.get_doc('Batch', row.doc.batch_no);
-						console.log("🤔 ~ get_dialog_table_fields ~ batch:", batch)
-
 						// wait for dialog to open then patch data
 						setTimeout(() => {
 							if (cur_dialog.title === "New Batch") {
@@ -365,13 +362,17 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 									"click",
 									() => {
 										let new_batch = cur_dialog.doc;
-										new_batch = {
-											...new_batch,
-											batch_no: [
-												new_batch.item,
-												new_batch.batch_id,
-											].join("-"),
-										};
+										frappe.db.get_doc('Item',self.item.item_code).then((data)=>{
+											new_batch = {
+												...new_batch,
+												batch_no: [
+													data.custom_item_id,
+													new_batch.batch_id,
+												].join("-"),
+											};
+
+										})
+
 										cur_dialog.hide();
 										// wait dialog to hide
 										setTimeout(() => {
@@ -379,6 +380,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 												new_batch.batch_no
 											);
 										}, 500);
+
 									}
 								);
 							}
