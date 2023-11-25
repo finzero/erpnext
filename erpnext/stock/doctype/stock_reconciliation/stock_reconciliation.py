@@ -12,6 +12,7 @@ import erpnext
 from erpnext.accounts.utils import get_company_default
 from erpnext.controllers.stock_controller import StockController
 from erpnext.stock.doctype.batch.batch import get_available_batches, get_batch_qty
+from erpnext.stock.doctype.inventory_dimension.inventory_dimension import get_inventory_dimensions
 from erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle import (
 	get_available_serial_nos,
 )
@@ -50,12 +51,24 @@ class StockReconciliation(StockController):
 		self.clean_serial_nos()
 		self.set_total_qty_and_amount()
 		self.validate_putaway_capacity()
+		self.validate_inventory_dimension()
 
 		if self._action == "submit":
 			self.validate_reserved_stock()
 
 	def on_update(self):
 		self.set_serial_and_batch_bundle(ignore_validate=True)
+
+	def validate_inventory_dimension(self):
+		dimensions = get_inventory_dimensions()
+		for dimension in dimensions:
+			for row in self.items:
+				if not row.batch_no and row.current_qty and row.get(dimension.get("fieldname")):
+					frappe.throw(
+						_(
+							"Row #{0}: You cannot use the inventory dimension '{1}' in Stock Reconciliation to modify the quantity or valuation rate. Stock reconciliation with inventory dimensions is intended solely for performing opening entries."
+						).format(row.idx, bold(dimension.get("doctype")))
+					)
 
 	def on_submit(self):
 		self.update_stock_ledger()
@@ -202,8 +215,19 @@ class StockReconciliation(StockController):
 				self.calculate_difference_amount(item, bundle_data)
 				return True
 
+			inventory_dimensions_dict = {}
+			if not item.batch_no and not item.serial_no:
+				for dimension in get_inventory_dimensions():
+					if item.get(dimension.get("fieldname")):
+						inventory_dimensions_dict[dimension.get("fieldname")] = item.get(dimension.get("fieldname"))
+
 			item_dict = get_stock_balance_for(
-				item.item_code, item.warehouse, self.posting_date, self.posting_time, batch_no=item.batch_no
+				item.item_code,
+				item.warehouse,
+				self.posting_date,
+				self.posting_time,
+				batch_no=item.batch_no,
+				inventory_dimensions_dict=inventory_dimensions_dict,
 			)
 
 			if (item.qty is None or item.qty == item_dict.get("qty")) and (
@@ -389,6 +413,11 @@ class StockReconciliation(StockController):
 
 		sl_entries = []
 		for row in self.items:
+
+			if not row.qty and not row.valuation_rate and not row.current_qty:
+				self.make_adjustment_entry(row, sl_entries)
+				continue
+
 			item = frappe.get_cached_value(
 				"Item", row.item_code, ["has_serial_no", "has_batch_no"], as_dict=1
 			)
@@ -438,6 +467,21 @@ class StockReconciliation(StockController):
 				frappe.db.get_single_value("Stock Settings", "allow_negative_stock")
 			)
 			self.make_sl_entries(sl_entries, allow_negative_stock=allow_negative_stock)
+
+	def make_adjustment_entry(self, row, sl_entries):
+		from erpnext.stock.stock_ledger import get_stock_value_difference
+
+		difference_amount = get_stock_value_difference(
+			row.item_code, row.warehouse, self.posting_date, self.posting_time
+		)
+
+		if not difference_amount:
+			return
+
+		args = self.get_sle_for_items(row)
+		args.update({"stock_value_difference": -1 * difference_amount, "is_adjustment_entry": 1})
+
+		sl_entries.append(args)
 
 	def get_sle_for_serialized_items(self, row, sl_entries):
 		if row.current_serial_and_batch_bundle:
@@ -507,7 +551,13 @@ class StockReconciliation(StockController):
 		if not row.batch_no:
 			data.qty_after_transaction = flt(row.qty, row.precision("qty"))
 
-		if self.docstatus == 2:
+		dimensions = get_inventory_dimensions()
+		has_dimensions = False
+		for dimension in dimensions:
+			if row.get(dimension.get("fieldname")):
+				has_dimensions = True
+
+		if self.docstatus == 2 and (not row.batch_no or not row.serial_and_batch_bundle):
 			if row.current_qty:
 				data.actual_qty = -1 * row.current_qty
 				data.qty_after_transaction = flt(row.current_qty)
@@ -522,6 +572,13 @@ class StockReconciliation(StockController):
 				data.serial_and_batch_bundle = row.serial_and_batch_bundle
 				data.valuation_rate = flt(row.valuation_rate)
 				data.stock_value_difference = -1 * flt(row.amount_difference)
+
+		elif (
+			self.docstatus == 1 and has_dimensions and (not row.batch_no or not row.serial_and_batch_bundle)
+		):
+			data.actual_qty = row.qty
+			data.qty_after_transaction = 0.0
+			data.incoming_rate = flt(row.valuation_rate)
 
 		self.update_inventory_dimensions(row, data)
 
@@ -911,6 +968,7 @@ def get_stock_balance_for(
 	posting_time,
 	batch_no: Optional[str] = None,
 	with_valuation_rate: bool = True,
+	inventory_dimensions_dict=None,
 ):
 	frappe.has_permission("Stock Reconciliation", "write", throw=True)
 
@@ -939,6 +997,7 @@ def get_stock_balance_for(
 		posting_time,
 		with_valuation_rate=with_valuation_rate,
 		with_serial_no=has_serial_no,
+		inventory_dimensions_dict=inventory_dimensions_dict,
 	)
 
 	if has_serial_no:

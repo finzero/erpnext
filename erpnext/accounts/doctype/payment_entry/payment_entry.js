@@ -154,7 +154,7 @@ frappe.ui.form.on('Payment Entry', {
 		frm.events.set_dynamic_labels(frm);
 		frm.events.show_general_ledger(frm);
 		erpnext.accounts.ledger_preview.show_accounting_ledger_preview(frm);
-		if(frm.doc.references.find((elem) => {return elem.exchange_gain_loss != 0})) {
+		if((frm.doc.references) && (frm.doc.references.find((elem) => {return elem.exchange_gain_loss != 0}))) {
 			frm.add_custom_button(__("View Exchange Gain/Loss Journals"), function() {
 				frappe.set_route("List", "Journal Entry", {"voucher_type": "Exchange Gain Or Loss", "reference_name": frm.doc.name});
 			}, __('Actions'));
@@ -853,6 +853,7 @@ frappe.ui.form.on('Payment Entry', {
 
 			var allocated_positive_outstanding =  paid_amount + allocated_negative_outstanding;
 		} else if (in_list(["Customer", "Supplier"], frm.doc.party_type)) {
+			total_negative_outstanding = flt(total_negative_outstanding, precision("outstanding_amount"))
 			if(paid_amount > total_negative_outstanding) {
 				if(total_negative_outstanding == 0) {
 					frappe.msgprint(

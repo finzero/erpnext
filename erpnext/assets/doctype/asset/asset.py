@@ -46,12 +46,28 @@ class Asset(AccountsController):
 		self.validate_item()
 		self.validate_cost_center()
 		self.set_missing_values()
-		self.validate_finance_books()
-		if not self.split_from:
-			self.prepare_depreciation_data()
-			update_draft_asset_depr_schedules(self)
 		self.validate_gross_and_purchase_amount()
 		self.validate_expected_value_after_useful_life()
+		self.validate_finance_books()
+
+		if not self.split_from:
+			self.prepare_depreciation_data()
+
+			if self.calculate_depreciation:
+				update_draft_asset_depr_schedules(self)
+
+				if frappe.db.exists("Asset", self.name):
+					asset_depr_schedules_names = make_draft_asset_depr_schedules_if_not_present(self)
+
+					if asset_depr_schedules_names:
+						asset_depr_schedules_links = get_comma_separated_links(
+							asset_depr_schedules_names, "Asset Depreciation Schedule"
+						)
+						frappe.msgprint(
+							_(
+								"Asset Depreciation Schedules created:<br>{0}<br><br>Please check, edit if needed, and submit the Asset."
+							).format(asset_depr_schedules_links)
+						)
 
 		self.status = self.get_status()
 
@@ -61,17 +77,7 @@ class Asset(AccountsController):
 		if not self.booked_fixed_asset and self.validate_make_gl_entry():
 			self.make_gl_entries()
 		if self.calculate_depreciation and not self.split_from:
-			asset_depr_schedules_names = make_draft_asset_depr_schedules_if_not_present(self)
 			convert_draft_asset_depr_schedules_into_active(self)
-			if asset_depr_schedules_names:
-				asset_depr_schedules_links = get_comma_separated_links(
-					asset_depr_schedules_names, "Asset Depreciation Schedule"
-				)
-				frappe.msgprint(
-					_(
-						"Asset Depreciation Schedules created:<br>{0}<br><br>Please check, edit if needed, and submit the Asset."
-					).format(asset_depr_schedules_links)
-				)
 		self.set_status()
 		add_asset_activity(self.name, _("Asset submitted"))
 
@@ -228,7 +234,7 @@ class Asset(AccountsController):
 		if not self.asset_category:
 			self.asset_category = frappe.get_cached_value("Item", self.item_code, "asset_category")
 
-		if not flt(self.gross_purchase_amount):
+		if not flt(self.gross_purchase_amount) and not self.is_composite_asset:
 			frappe.throw(_("Gross Purchase Amount is mandatory"), frappe.MandatoryError)
 
 		if is_cwip_accounting_enabled(self.asset_category):
@@ -769,6 +775,15 @@ def create_asset_repair(asset, asset_name):
 
 
 @frappe.whitelist()
+def create_asset_capitalization(asset):
+	asset_capitalization = frappe.new_doc("Asset Capitalization")
+	asset_capitalization.update(
+		{"target_asset": asset, "capitalization_method": "Choose a WIP composite asset"}
+	)
+	return asset_capitalization
+
+
+@frappe.whitelist()
 def create_asset_value_adjustment(asset, asset_category, company):
 	asset_value_adjustment = frappe.new_doc("Asset Value Adjustment")
 	asset_value_adjustment.update(
@@ -809,11 +824,12 @@ def get_item_details(item_code, asset_category, gross_purchase_amount):
 				"depreciation_method": d.depreciation_method,
 				"total_number_of_depreciations": d.total_number_of_depreciations,
 				"frequency_of_depreciation": d.frequency_of_depreciation,
-				"daily_depreciation": d.daily_depreciation,
+				"daily_prorata_based": d.daily_prorata_based,
 				"salvage_value_percentage": d.salvage_value_percentage,
 				"expected_value_after_useful_life": flt(gross_purchase_amount)
 				* flt(d.salvage_value_percentage / 100),
 				"depreciation_start_date": d.depreciation_start_date or nowdate(),
+				"rate_of_depreciation": d.rate_of_depreciation,
 			}
 		)
 

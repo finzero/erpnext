@@ -165,10 +165,10 @@
    "oldfieldname": "description",
    "oldfieldtype": "Small Text",
    "print_width": "300px",
-   "reqd": 1,
    "width": "300px"
   },
   {
+   "fetch_from": "item_code.image",
    "fieldname": "image",
    "fieldtype": "Attach",
    "hidden": 1,
@@ -726,7 +726,8 @@
    "label": "Against Delivery Note Item",
    "no_copy": 1,
    "print_hide": 1,
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "stock_qty_sec_break",
@@ -893,7 +894,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-07-26 12:53:49.357171",
+ "modified": "2023-11-14 18:37:38.638144",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Delivery Note Item",
