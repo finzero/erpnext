@@ -14,7 +14,7 @@
  "hide_custom": 0,
  "icon": "crm",
  "idx": 0,
- "is_hidden": 0,
+ "is_hidden": 1,
  "label": "CRM",
  "links": [
   {
@@ -419,7 +419,7 @@
    "type": "Link"
   }
  ],
- "modified": "2023-09-14 12:11:03.968048",
+ "modified": "2023-12-04 13:38:36.996512",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "CRM",
