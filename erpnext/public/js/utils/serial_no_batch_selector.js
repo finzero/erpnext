@@ -358,6 +358,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 
 						const row = grid.get_row(grid_row);
 						const fields = row.on_grid_fields_dict;
+						console.log("🤔 ~ get_dialog_table_fields ~ fields:", fields)
 						const item_code = row.doc.batch_no;
 
 						// wait for dialog to open then patch data
@@ -401,10 +402,19 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 						}, 500);
 
 						if (item_code) {
+							let warehouse = cur_dialog.get_value("warehouse");
 							self.fetch_batch_no(item_code, function (response) {
-								const { multiplier, batch_qty } = response.message;
-								fields.custom_multiplier.set_value(multiplier);
-								fields.batch_qty.set_value(batch_qty);
+								const { multiplier, item } = response.message;
+
+								frappe.call({
+									method: 'erpnext.stock.doctype.batch.batch.get_batch_qty',
+									args: { batch_no: item_code, item_code: item, warehouse: warehouse },
+									callback: (r) => {
+										fields.custom_multiplier.set_value(multiplier);
+										fields.batch_qty.set_value(r.message);
+									}
+								})
+
 							});
 						}
 					},
@@ -676,7 +686,16 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		data.forEach((d) => {
 			const item = d;
 			frappe.db.get_doc('Batch', item.batch_no).then(batch_data => {
-				item.batch_qty = batch_data.batch_qty;
+				// item.batch_qty = batch_data.batch_qty;
+
+				// frappe.call({
+				//   method: 'erpnext.stock.doctype.batch.batch.get_batch_qty',
+				//   args: { batch_no: item.batch_no, item_code: batch.item, warehouse: warehouse },
+				//   callback: (r) => {
+
+				// 	}
+				// })
+
 				this.dialog.fields_dict.entries.df.data.push(item);
 				this.dialog.fields_dict.entries.grid.refresh();
 			})
