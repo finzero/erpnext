@@ -318,9 +318,9 @@ erpnext.TransactionController = class TransactionController extends (
 
 	toggle_enable_for_stock_uom(field) {
 		frappe.db.get_single_value('Stock Settings', field)
-		.then(value => {
-			this.frm.fields_dict["items"].grid.toggle_enable("stock_qty", value);
-		});
+			.then(value => {
+				this.frm.fields_dict["items"].grid.toggle_enable("stock_qty", value);
+			});
 	}
 	onload() {
 		var me = this;
@@ -462,18 +462,8 @@ erpnext.TransactionController = class TransactionController extends (
 	}
 
 	onload_post_render() {
-<<<<<<< HEAD
-		if (
-			this.frm.doc.__islocal &&
-			!(this.frm.doc.taxes || []).length &&
-			!(this.frm.doc.__onload
-				? this.frm.doc.__onload.load_after_mapping
-				: false)
-		) {
-=======
-		if(this.frm.doc.__islocal && !(this.frm.doc.taxes || []).length
+		if (this.frm.doc.__islocal && !(this.frm.doc.taxes || []).length
 			&& !this.frm.doc.__onload?.load_after_mapping) {
->>>>>>> version-15
 			frappe.after_ajax(() => this.apply_default_taxes());
 		} else if (
 			this.frm.doc.__islocal &&
@@ -689,7 +679,7 @@ erpnext.TransactionController = class TransactionController extends (
 										(me.frm.doc.is_internal_customer ||
 											me.frm.doc.is_internal_supplier) &&
 										me.frm.doc.represents_company ===
-											me.frm.doc.company
+										me.frm.doc.company
 									) {
 										me.get_incoming_rate(
 											item,
@@ -837,7 +827,7 @@ erpnext.TransactionController = class TransactionController extends (
 				"Purchase Order Item",
 				"Purchase Receipt Item",
 			]),
-			cdt)
+				cdt)
 		)
 			this.apply_pricing_rule_on_item(item);
 		else
@@ -1301,28 +1291,13 @@ erpnext.TransactionController = class TransactionController extends (
 		let me = this;
 		this.set_dynamic_labels();
 		let company_currency = this.get_company_currency();
-<<<<<<< HEAD
-		// Added `ignore_price_list` to determine if document is loading after mapping from another doc
-		if (
-			this.frm.doc.currency &&
-			this.frm.doc.currency !== company_currency &&
-			!(this.frm.doc.__onload && this.frm.doc.__onload.ignore_price_list)
-		) {
-			this.get_exchange_rate(
-				transaction_date,
-				this.frm.doc.currency,
-				company_currency,
-				function (exchange_rate) {
-					if (exchange_rate != me.frm.doc.conversion_rate) {
-=======
 		// Added `load_after_mapping` to determine if document is loading after mapping from another doc
-		if(this.frm.doc.currency && this.frm.doc.currency !== company_currency
-				&& !this.frm.doc.__onload?.load_after_mapping) {
+		if (this.frm.doc.currency && this.frm.doc.currency !== company_currency
+			&& !this.frm.doc.__onload?.load_after_mapping) {
 
 			this.get_exchange_rate(transaction_date, this.frm.doc.currency, company_currency,
-				function(exchange_rate) {
-					if(exchange_rate != me.frm.doc.conversion_rate) {
->>>>>>> version-15
+				function (exchange_rate) {
+					if (exchange_rate != me.frm.doc.conversion_rate) {
 						me.set_margin_amount_based_on_currency(exchange_rate);
 						me.set_actual_charges_based_on_currency(exchange_rate);
 						me.frm.set_value("conversion_rate", exchange_rate);
@@ -1355,16 +1330,8 @@ erpnext.TransactionController = class TransactionController extends (
 			);
 		}
 
-<<<<<<< HEAD
 		if (flt(this.frm.doc.conversion_rate) > 0.0) {
-			if (
-				this.frm.doc.__onload &&
-				this.frm.doc.__onload.ignore_price_list
-			) {
-=======
-		if(flt(this.frm.doc.conversion_rate)>0.0) {
-			if(this.frm.doc.__onload?.load_after_mapping) {
->>>>>>> version-15
+			if (this.frm.doc.__onload?.load_after_mapping) {
 				this.calculate_taxes_and_totals();
 			} else if (!this.in_apply_price_list) {
 				this.apply_price_list();
@@ -1414,7 +1381,7 @@ erpnext.TransactionController = class TransactionController extends (
 				"Purchase Order",
 				"Purchase Receipt",
 			]),
-			this.frm.doc.doctype)
+				this.frm.doc.doctype)
 		) {
 			var me = this;
 			$.each(this.frm.doc.items || [], function (i, d) {
@@ -1485,24 +1452,11 @@ erpnext.TransactionController = class TransactionController extends (
 		this.set_dynamic_labels();
 
 		var company_currency = this.get_company_currency();
-<<<<<<< HEAD
-		// Added `ignore_price_list` to determine if document is loading after mapping from another doc
-		if (
-			this.frm.doc.price_list_currency !== company_currency &&
-			!(this.frm.doc.__onload && this.frm.doc.__onload.ignore_price_list)
-		) {
-			this.get_exchange_rate(
-				this.frm.doc.posting_date,
-				this.frm.doc.price_list_currency,
-				company_currency,
-				function (exchange_rate) {
-=======
 		// Added `load_after_mapping` to determine if document is loading after mapping from another doc
-		if(this.frm.doc.price_list_currency !== company_currency  &&
-				!this.frm.doc.__onload?.load_after_mapping) {
+		if (this.frm.doc.price_list_currency !== company_currency &&
+			!this.frm.doc.__onload?.load_after_mapping) {
 			this.get_exchange_rate(this.frm.doc.posting_date, this.frm.doc.price_list_currency, company_currency,
-				function(exchange_rate) {
->>>>>>> version-15
+				function (exchange_rate) {
 					me.frm.set_value("plc_conversion_rate", exchange_rate);
 				}
 			);
@@ -1519,7 +1473,7 @@ erpnext.TransactionController = class TransactionController extends (
 			this.frm.doc.plc_conversion_rate &&
 			cint(this.frm.doc.plc_conversion_rate) != 1 &&
 			cint(this.frm.doc.plc_conversion_rate) !=
-				cint(this.frm.doc.conversion_rate)
+			cint(this.frm.doc.conversion_rate)
 		) {
 			this.frm.set_value(
 				"conversion_rate",
@@ -1791,9 +1745,9 @@ erpnext.TransactionController = class TransactionController extends (
 				"plc_conversion_rate",
 				"description",
 				"1 " +
-					this.frm.doc.price_list_currency +
-					" = [?] " +
-					company_currency
+				this.frm.doc.price_list_currency +
+				" = [?] " +
+				company_currency
 			);
 		}
 
@@ -2188,7 +2142,7 @@ erpnext.TransactionController = class TransactionController extends (
 						"Purchase Order Item",
 						"Purchase Receipt Item",
 					]),
-					d.doctype)
+						d.doctype)
 				) {
 					item_list[0]["margin_type"] = d.margin_type;
 					item_list[0]["margin_rate_or_amount"] =
@@ -2519,14 +2473,14 @@ erpnext.TransactionController = class TransactionController extends (
 				if (!me.frm.doc[fieldname]) {
 					frappe.msgprint(
 						__("Please specify") +
-							": " +
-							frappe.meta.get_label(
-								me.frm.doc.doctype,
-								fieldname,
-								me.frm.doc.name
-							) +
-							". " +
-							__("It is needed to fetch Item Details.")
+						": " +
+						frappe.meta.get_label(
+							me.frm.doc.doctype,
+							fieldname,
+							me.frm.doc.name
+						) +
+						". " +
+						__("It is needed to fetch Item Details.")
 					);
 					valid = false;
 				}

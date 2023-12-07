@@ -45,7 +45,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		});
 
 		this.dialog.show();
-<<<<<<< HEAD
 		// wait dialog to open then do calculation
 		setTimeout(() => {
 			that.update_total_qty();
@@ -54,16 +53,15 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 			document.querySelector('.modal-dialog').classList.add('modal-lg');
 
 			// cur_dialog.wrapper[0].querySelector('[data-action=delete_rows]')
-			$(cur_dialog.wrapper).find('[data-action=delete_rows]').on('click',()=>{
+			$(cur_dialog.wrapper).find('[data-action=delete_rows]').on('click', () => {
 				that.update_total_qty();
 				that.update_total_roll();
 			})
 
 		}, 1000);
-=======
+
 		this.$scan_btn = this.dialog.$wrapper.find(".link-btn");
 		this.$scan_btn.css("display", "inline");
->>>>>>> version-15
 	}
 
 	get_serial_no_filters() {
@@ -138,16 +136,10 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 
 		if (this.item.has_serial_no) {
 			fields.push({
-<<<<<<< HEAD
-				fieldtype: "Data",
-				fieldname: "scan_serial_no",
-				label: __("Scan Serial No"),
-=======
 				fieldtype: 'Data',
 				options: 'Barcode',
 				fieldname: 'scan_serial_no',
 				label: __('Scan Serial No'),
->>>>>>> version-15
 				get_query: () => {
 					return {
 						filters: this.get_serial_no_filters(),
@@ -157,7 +149,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 			});
 		}
 
-<<<<<<< HEAD
 		if (this.item.has_batch_no && this.item.has_serial_no) {
 			fields.push({
 				fieldtype: "Column Break",
@@ -165,9 +156,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		}
 
 		/* if (this.item.has_batch_no) {
-=======
-		if (this.item.has_batch_no && !this.item.has_serial_no) {
->>>>>>> version-15
 			fields.push({
 				fieldtype: 'Data',
 				options: 'Barcode',
@@ -388,7 +376,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 									"click",
 									() => {
 										let new_batch = cur_dialog.doc;
-										frappe.db.get_doc('Item',self.item.item_code).then((data)=>{
+										frappe.db.get_doc('Item', self.item.item_code).then((data) => {
 											new_batch = {
 												...new_batch,
 												batch_no: [
@@ -435,8 +423,8 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 						const rowIndex = gridRow.getAttribute("data-idx") - 1;
 						const grid = cur_dialog.fields_dict.entries.grid;
 						const row = grid.get_grid_row(rowIndex);
-						
-						const field_value = (field) =>  row.get_field(field).get_value();
+
+						const field_value = (field) => row.get_field(field).get_value();
 
 						const custom_qty2 = field_value("custom_qty2");
 						const multiplier = field_value("custom_multiplier");
@@ -463,7 +451,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 					in_list_view: 1,
 					onchange: this.update_total_qty,
 				});
-				
+
 				batch_fields.push({
 					fieldtype: "Float",
 					fieldname: "batch_qty",
@@ -487,12 +475,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 	}
 
 	get_auto_data() {
-<<<<<<< HEAD
-		return true;
-		// disable autodata, we want to input batch manually
-		// let { qty, based_on, custom_qty2, custom_uom2 } =
-		// 	this.dialog.get_values();
-=======
 		if (this.item.serial_and_batch_bundle || this.item.rejected_serial_and_batch_bundle) {
 			return;
 		}
@@ -502,7 +484,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		}
 
 		let { qty, based_on } = this.dialog.get_values();
->>>>>>> version-15
 
 		// if (!based_on) {
 		// 	based_on = "FIFO";
@@ -535,19 +516,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		const { scan_serial_no, scan_batch_no } = this.dialog.get_values();
 
 		if (scan_serial_no) {
-<<<<<<< HEAD
-			this.dialog.fields_dict.entries.df.data.push({
-				serial_no: scan_serial_no,
-			});
-
-			this.dialog.fields_dict.scan_serial_no.set_value("");
-		} else if (scan_batch_no) {
-			this.dialog.fields_dict.entries.df.data.push({
-				batch_no: scan_batch_no,
-			});
-
-			this.dialog.fields_dict.scan_batch_no.set_value("");
-=======
 			let existing_row = this.dialog.fields_dict.entries.df.data.filter(d => {
 				if (d.serial_no === scan_serial_no) {
 					return d
@@ -600,7 +568,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 			}
 
 			this.dialog.fields_dict.scan_batch_no.set_value('');
->>>>>>> version-15
 		}
 
 		this.dialog.fields_dict.entries.grid.refresh();
@@ -611,17 +578,17 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		let warehouse = this.dialog.get_value("warehouse");
 		let custom_uom2 = this.dialog.get_value("custom_uom2");
 		entries = entries.map((entry) => ({ ...entry, custom_uom2 }));
-		
+
 		// special case for batch, allow multiple same batch no input
 		// accumulate qty & custom__qty2 into unique object data
 		let unique_batch_no = [];
 		let unique_entries = [];
-		entries.forEach((d)=>{
-			if(!unique_batch_no.includes(d.batch_no)){
+		entries.forEach((d) => {
+			if (!unique_batch_no.includes(d.batch_no)) {
 				unique_entries.push(d);
 				unique_batch_no.push(d.batch_no);
 			} else {
-				const batch = unique_entries.find((ud)=>ud.batch_no===d.batch_no);
+				const batch = unique_entries.find((ud) => ud.batch_no === d.batch_no);
 				batch.custom_qty2 += d.custom_qty2;
 				batch.qty += d.qty;
 			}
@@ -708,7 +675,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 	set_data(data) {
 		data.forEach((d) => {
 			const item = d;
-			frappe.db.get_doc('Batch',item.batch_no).then(batch_data => {
+			frappe.db.get_doc('Batch', item.batch_no).then(batch_data => {
 				item.batch_qty = batch_data.batch_qty;
 				this.dialog.fields_dict.entries.df.data.push(item);
 				this.dialog.fields_dict.entries.grid.refresh();
@@ -742,12 +709,12 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 	update_total_roll() {
 		setTimeout(() => {
 			const grid_row_el = cur_dialog.wrapper[0].querySelectorAll('.grid-row[data-idx]')
-			const available_idx = Array.from(grid_row_el, (el)=>Number(el.getAttribute('data-idx')));
-			
+			const available_idx = Array.from(grid_row_el, (el) => Number(el.getAttribute('data-idx')));
+
 			const entries = cur_dialog.fields_dict.entries.get_value();
 			const total_roll = entries.reduce(
 				(acc, cur) => {
-					if(available_idx.includes(cur.idx)){
+					if (available_idx.includes(cur.idx)) {
 						return acc + cur.custom_qty2
 					} else {
 						return 0;
@@ -756,17 +723,17 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 				0
 			);
 			cur_dialog.fields_dict.custom_total_qty2.set_value(total_roll);
-		}, 500)	
+		}, 500)
 	}
 
 	update_total_qty() {
 		setTimeout(() => {
 			const grid_row_el = cur_dialog.wrapper[0].querySelectorAll('.grid-row[data-idx]')
-			const available_idx = Array.from(grid_row_el, (el)=>Number(el.getAttribute('data-idx')));
-	
+			const available_idx = Array.from(grid_row_el, (el) => Number(el.getAttribute('data-idx')));
+
 			const entries = cur_dialog.fields_dict.entries.get_value();
 			const total_qty = entries.reduce((acc, cur) => {
-				if(available_idx.includes(cur.idx)){
+				if (available_idx.includes(cur.idx)) {
 					return acc + cur.qty
 				} else {
 					return 0;
