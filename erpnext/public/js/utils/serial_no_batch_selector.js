@@ -45,6 +45,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		});
 
 		this.dialog.show();
+		this.dialog.$wrapper.data("bs.modal")._config.backdrop = 'static';
 		// wait dialog to open then do calculation
 		setTimeout(() => {
 			that.update_total_qty();
@@ -747,6 +748,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 
 	update_total_qty() {
 		setTimeout(() => {
+			console.log('update total qty2');
 			const grid_row_el = cur_dialog.wrapper[0].querySelectorAll('.grid-row[data-idx]')
 			const available_idx = Array.from(grid_row_el, (el) => Number(el.getAttribute('data-idx')));
 
