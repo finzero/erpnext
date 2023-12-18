@@ -1506,6 +1506,7 @@ def get_auto_batch_nos(kwargs):
 	if not qty:
 		return available_batches
 
+
 	return get_qty_based_available_batches(available_batches, qty)
 
 
@@ -1573,10 +1574,11 @@ def get_available_batches(kwargs):
 		.inner_join(batch_table)
 		.on(batch_ledger.batch_no == batch_table.name)
 		.select(
-			batch_table.qty2,
+			# batch_table.qty2,
 			batch_table.multiplier,
 			batch_ledger.batch_no,
 			batch_ledger.warehouse,
+			Sum(batch_ledger.custom_qty2).as_("qty2"),
 			Sum(batch_ledger.qty).as_("qty"),
 		)
 		.where(
@@ -1760,6 +1762,7 @@ def get_stock_ledgers_batches(kwargs):
 		.select(
 			stock_ledger_entry.warehouse,
 			stock_ledger_entry.item_code,
+			Sum(stock_ledger_entry.custom_actual_qty2).as_("qty2"),
 			Sum(stock_ledger_entry.actual_qty).as_("qty"),
 			stock_ledger_entry.batch_no,
 		)
@@ -1791,7 +1794,6 @@ def get_stock_ledgers_batches(kwargs):
 			batches[key] = d
 		else:
 			batches[key].qty += d.qty
-
 	return batches
 
 

@@ -226,7 +226,6 @@ def get_batch_qty(
 	)
 
 	batches = get_auto_batch_nos(kwargs)
-
 	if not (batch_no and warehouse):
 		return batches
 
@@ -234,6 +233,55 @@ def get_batch_qty(
 		batchwise_qty[batch.get("batch_no")] += batch.get("qty")
 
 	return batchwise_qty[batch_no]
+
+@frappe.whitelist()
+def get_batch_qty2(
+	batch_no=None,
+	warehouse=None,
+	item_code=None,
+	posting_date=None,
+	posting_time=None,
+	ignore_voucher_nos=None,
+):
+	"""Returns batch actual qty if warehouse is passed,
+	        or returns dict of qty by warehouse if warehouse is None
+
+	The user must pass either batch_no or batch_no + warehouse or item_code + warehouse
+
+	:param batch_no: Optional - give qty for this batch no
+	:param warehouse: Optional - give qty for this warehouse
+	:param item_code: Optional - give qty for this item"""
+
+	from erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle import (
+		get_auto_batch_nos,
+	)
+
+	batchwise_qty = defaultdict(float)
+	batchwise_qty2 = defaultdict(float)
+	kwargs = frappe._dict(
+		{
+			"item_code": item_code,
+			"warehouse": warehouse,
+			"posting_date": posting_date,
+			"posting_time": posting_time,
+			"batch_no": batch_no,
+			"ignore_voucher_nos": ignore_voucher_nos,
+		}
+	)
+
+	batches = get_auto_batch_nos(kwargs)
+	if not (batch_no and warehouse):
+		return batches
+
+	for batch in batches:
+		batchwise_qty[batch.get("batch_no")] += batch.get("qty")
+		batchwise_qty2[batch.get("batch_no")] += batch.get("qty2")
+
+	# import pdb
+	# pdb.set_trace()
+	# print('batches',batches)
+	# return batchwise_qty[batch_no]
+	return {'qty': batchwise_qty[batch_no], 'qty2': batchwise_qty2[batch_no]}
 
 
 @frappe.whitelist()
