@@ -488,9 +488,9 @@ def get_batches_from_stock_ledger_entries(searchfields, txt, filters):
 		query = query.select(batch_table[field])
 
 	if txt:
-		txt_condition = batch_table.name.like(txt)
+		txt_condition = batch_table.name.like(f"%{txt}%")
 		for field in searchfields + ["name"]:
-			txt_condition |= batch_table[field].like(txt)
+			txt_condition |= batch_table[field].like(f"%{txt}%")
 
 		query = query.where(txt_condition)
 
@@ -536,9 +536,9 @@ def get_batches_from_serial_and_batch_bundle(searchfields, txt, filters):
 		bundle_query = bundle_query.select(batch_table[field])
 
 	if txt:
-		txt_condition = batch_table.name.like(txt)
+		txt_condition = batch_table.name.like(f"%{txt}%")
 		for field in searchfields + ["name"]:
-			txt_condition |= batch_table[field].like(txt)
+			txt_condition |= batch_table[field].like(f"%{txt}%")
 
 		bundle_query = bundle_query.where(txt_condition)
 
