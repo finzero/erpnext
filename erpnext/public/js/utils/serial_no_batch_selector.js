@@ -367,7 +367,6 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 
 						const row = grid.get_row(grid_row);
 						const fields = row.on_grid_fields_dict;
-						console.log("🤔 ~ get_dialog_table_fields ~ fields:", fields)
 						const batch_no = row.doc.batch_no;
 
 						// wait for dialog to open then patch data
@@ -433,15 +432,10 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 					label: __("Roll"),
 					in_list_view: 1,
 					onchange: function (e) {
-						console.log('changed')
 						const gridRow = e.target.closest(".grid-row");
-						console.log("🤔 ~ get_dialog_table_fields ~ gridRow:", gridRow)
 						const rowIndex = gridRow.getAttribute("data-idx") - 1;
-						console.log("🤔 ~ get_dialog_table_fields ~ rowIndex:", rowIndex)
 						const grid = cur_dialog.fields_dict.entries.grid;
-						console.log("🤔 ~ get_dialog_table_fields ~ grid:", grid)
 						const row = grid.get_grid_row(rowIndex);
-						console.log("🤔 ~ get_dialog_table_fields ~ row:", row)
 
 						const custom_qty2 = row.doc.custom_qty2;
 						const multiplier = row.doc.custom_multiplier;
@@ -813,26 +807,18 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 	}
 
 	update_total_qty() {
-		console.log('update total qty')
 		setTimeout(() => {
-			// console.log('update total qty2');
 			const grid_row_el = cur_dialog.wrapper[0].querySelectorAll('.grid-row[data-idx]')
-			console.log("🤔 ~ setTimeout ~ grid_row_el:", grid_row_el)
 			const available_idx = Array.from(grid_row_el, (el) => Number(el.getAttribute('data-idx')));
-			console.log("🤔 ~ setTimeout ~ available_idx:", available_idx)
-
 			const entries = cur_dialog.fields_dict.entries.get_value();
-			console.log("🤔 ~ setTimeout ~ entries:", entries)
 			const total_qty = entries.reduce((acc, cur) => {
 				if (available_idx.includes(cur.idx)) {
-					console.log(acc, cur)
 					return acc + cur.qty
 				} else {
 					return 0;
 				}
 			}, 0);
 			cur_dialog.fields_dict.total_qty.set_value(total_qty);
-			console.log("🤔 ~ setTimeout ~ total_qty:", total_qty)
 			cur_dialog.refresh();
 		}, 500);
 	}
