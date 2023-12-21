@@ -734,56 +734,146 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		})
 	}
 
-	add_batch_from_list_action() {
-		frappe.db.get_list('Batch', { filters: { "item_name": this.item.item_code }, fields: ['*'] }).then(batches => {
-			const batchListColumns = [
-				{
-					fieldname: "batches",
-					fieldtype: "Table",
-					allow_bulk_edit: 0,
-					data: batches,
-					fields: [
-						{
-							fieldtype: "Link",
-							options: "Batch",
-							read_only: 1,
-							fieldname: "batch_id",
-							label: __("Batch No"),
-							in_list_view: 1
-						}
-					],
-				}
-			]
-
-			this.batchDialog = new frappe.ui.Dialog({
-				title: 'Batch List',
-				fields: batchListColumns,
-				primary_action_label: __('Select Batch'),
-				primary_action: () => {
-					const batches = this.batchDialog.get_values().batches;
-					const selectedBatches = batches.filter(batch => batch.__checked);
-					const entries = this.dialog.get_field('entries').grid;
-					selectedBatches.map((batch) => {
-						entries.add_new_row();
-						let newRow = entries.data[entries.data.length - 1];
-						newRow['batch_no'] = batch.batch_id;
-						newRow['custom_multiplier'] = batch.multiplier;
-						newRow['custom_qty2'] = 0;
-						newRow['qty'] = 0;
-						// fetch batch qty filtered by warehouse
-						this.fetch_batch_qty({ batch_no: batch.batch_id, warehouse: this.get_warehouse(), item_code: this.item.item_code }, (r) => {
-							newRow['batch_qty'] = r.message;
-							entries.refresh();
-						})
-					})
-					this.batchDialog.hide();
-				},
-				secondary_action_label: __("Cancel"),
-				secondary_action: () => this.batchDialog.hide(),
-			})
-
-			this.batchDialog.show();
+	fetch_batch_qty_in_warehouse({ batch_no, warehouse, item_code }, callback) {
+		frappe.call({
+			method: 'erpnext.stock.doctype.batch.batch.get_batch_qty2',
+			args: { batch_no, item_code, warehouse },
+			callback
 		})
+	}
+
+	add_batch_from_list_action() {
+		const batchListColumns = [
+			{
+				fieldtype: "Data",
+				read_only: 1,
+				fieldname: "item_code",
+				label: __("Nama Item"),
+				default: this.item.item_code
+			},
+			{
+				fieldname: "batches",
+				fieldtype: "Table",
+				allow_bulk_edit: 0,
+				data: [],
+				fields: [
+					{
+						fieldtype: "Link",
+						options: "Batch",
+						read_only: 1,
+						fieldname: "batch_id",
+						label: __("Batch No"),
+						in_list_view: 1
+					},
+					{
+						fieldtype: "Float",
+						fieldname: "batch_qty",
+						read_only: 1,
+						label: __("Qty"),
+						in_list_view: 1
+					},
+					{
+						fieldtype: "Float",
+						fieldname: "multiplier",
+						read_only: 1,
+						label: __("Multiplier"),
+						in_list_view: 0
+					},
+					{
+						fieldtype: "Data",
+						fieldname: "stock_uom",
+						read_only: 1,
+						label: __("Satuan"),
+						default: 'Yard',
+						in_list_view: 1
+					},
+					{
+						fieldtype: "Float",
+						fieldname: "qty2",
+						read_only: 1,
+						default: 0.0,
+						label: __("Roll"),
+						in_list_view: 1
+					},
+				],
+			},
+			{ fieldtype: "Section Break" },
+			{
+				fieldtype: "Data",
+				read_only: 1,
+				fieldname: "total_qty",
+				label: __("Total Qty"),
+				default: 11
+			},
+			{ fieldtype: "Column Break" },
+			{
+				fieldtype: "Data",
+				read_only: 1,
+				fieldname: "total_qty2",
+				label: __("Total Roll"),
+				default: 22
+			},
+		]
+
+		this.batchDialog = new frappe.ui.Dialog({
+			title: 'Batch List',
+			fields: batchListColumns,
+			primary_action_label: __('Select Batch'),
+			primary_action: () => {
+				const batches = this.batchDialog.get_values().batches;
+				const selectedBatches = batches.filter(batch => batch.__checked);
+				const entries = this.dialog.get_field('entries').grid;
+				selectedBatches.map((batch) => {
+					entries.add_new_row();
+					let newRow = entries.data[entries.data.length - 1];
+					newRow['batch_no'] = batch.batch_id;
+					newRow['custom_multiplier'] = batch.multiplier;
+					newRow['custom_qty2'] = 0;
+					newRow['qty'] = 0;
+					newRow['batch_qty'] = batch.batch_qty;
+					entries.refresh();
+					// fetch batch qty filtered by warehouse
+					// this.fetch_batch_qty({ batch_no: batch.batch_id, warehouse: this.get_warehouse(), item_code: this.item.item_code }, (r) => {})
+				})
+				this.batchDialog.hide();
+			},
+			secondary_action_label: __("Cancel"),
+			secondary_action: () => this.batchDialog.hide(),
+		})
+
+		this.batchDialog.show();
+
+		const batchGrid = this.batchDialog.get_field('batches').grid;
+		const totalQty = this.batchDialog.get_field('total_qty');
+		const totalQty2 = this.batchDialog.get_field('total_qty2');
+		let total_qty = 0;
+		let total_qty2 = 0;
+
+		//> fetch data for Batch List
+		frappe.db.get_list('Batch', { filters: { "item_name": this.item.item_code }, fields: ['*'] }).then(batches => {
+			batches.map((batch) => {
+
+				this.fetch_batch_qty_in_warehouse({ batch_no: batch.batch_id, warehouse: this.get_warehouse(), item_code: this.item.item_code }, (res) => {
+					const { qty, qty2 } = res.message;
+					batchGrid.add_new_row();
+					let batch_row = batchGrid.data[batchGrid.data.length - 1];
+					batch_row['batch_id'] = batch.batch_id;
+					batch_row['batch_qty'] = qty;
+					batch_row['multiplier'] = batch.multiplier;
+					batch_row['stock_uom'] = batch.stock_uom;
+					batch_row['qty2'] = qty2;
+					batchGrid.refresh();
+
+					// update total qty & total roll
+					total_qty += qty;
+					totalQty.set_value(total_qty);
+					total_qty2 += qty2;
+					totalQty2.set_value(total_qty2);
+					// this.batchDialog.refresh();
+				})
+			})
+		});
+
 	}
 
 	update_total_roll() {
