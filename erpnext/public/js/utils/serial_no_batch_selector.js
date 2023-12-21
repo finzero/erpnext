@@ -176,6 +176,14 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 			fieldtype: "Section Break",
 		});
 
+		//> Button to select batch from list
+		fields.push({
+			fieldtype: "Button",
+			fieldname: "add_batch_from_list",
+			label: __("Add From List"),
+			click: () => this.add_batch_from_list_action()
+		})
+
 		fields.push({
 			fieldname: "entries",
 			fieldtype: "Table",
@@ -360,7 +368,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 						const row = grid.get_row(grid_row);
 						const fields = row.on_grid_fields_dict;
 						console.log("🤔 ~ get_dialog_table_fields ~ fields:", fields)
-						const item_code = row.doc.batch_no;
+						const batch_no = row.doc.batch_no;
 
 						// wait for dialog to open then patch data
 						setTimeout(() => {
@@ -402,20 +410,15 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 							}
 						}, 500);
 
-						if (item_code) {
+						if (batch_no) {
 							let warehouse = cur_dialog.get_value("warehouse");
-							self.fetch_batch_no(item_code, function (response) {
+							self.fetch_batch_no(batch_no, function (response) {
 								const { multiplier, item } = response.message;
 
-								frappe.call({
-									method: 'erpnext.stock.doctype.batch.batch.get_batch_qty',
-									args: { batch_no: item_code, item_code: item, warehouse: warehouse },
-									callback: (r) => {
-										fields.custom_multiplier.set_value(multiplier);
-										fields.batch_qty.set_value(r.message);
-									}
+								self.fetch_batch_qty({ batch_no, item_code: item, warehouse }, (r) => {
+									fields.custom_multiplier.set_value(multiplier);
+									fields.batch_qty.set_value(r.message);
 								})
-
 							});
 						}
 					},
@@ -430,15 +433,18 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 					label: __("Roll"),
 					in_list_view: 1,
 					onchange: function (e) {
+						console.log('changed')
 						const gridRow = e.target.closest(".grid-row");
+						console.log("🤔 ~ get_dialog_table_fields ~ gridRow:", gridRow)
 						const rowIndex = gridRow.getAttribute("data-idx") - 1;
+						console.log("🤔 ~ get_dialog_table_fields ~ rowIndex:", rowIndex)
 						const grid = cur_dialog.fields_dict.entries.grid;
+						console.log("🤔 ~ get_dialog_table_fields ~ grid:", grid)
 						const row = grid.get_grid_row(rowIndex);
+						console.log("🤔 ~ get_dialog_table_fields ~ row:", row)
 
-						const field_value = (field) => row.get_field(field).get_value();
-
-						const custom_qty2 = field_value("custom_qty2");
-						const multiplier = field_value("custom_multiplier");
+						const custom_qty2 = row.doc.custom_qty2;
+						const multiplier = row.doc.custom_multiplier;
 						row.get_field("qty").set_value(
 							custom_qty2 * multiplier
 						);
@@ -726,6 +732,66 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		});
 	}
 
+	fetch_batch_qty({ batch_no, warehouse, item_code }, callback) {
+		frappe.call({
+			method: 'erpnext.stock.doctype.batch.batch.get_batch_qty',
+			args: { batch_no, item_code, warehouse },
+			callback
+		})
+	}
+
+	add_batch_from_list_action() {
+		frappe.db.get_list('Batch', { filters: { "item_name": this.item.item_code }, fields: ['*'] }).then(batches => {
+			const batchListColumns = [
+				{
+					fieldname: "batches",
+					fieldtype: "Table",
+					allow_bulk_edit: 0,
+					data: batches,
+					fields: [
+						{
+							fieldtype: "Link",
+							options: "Batch",
+							read_only: 1,
+							fieldname: "batch_id",
+							label: __("Batch No"),
+							in_list_view: 1
+						}
+					],
+				}
+			]
+
+			this.batchDialog = new frappe.ui.Dialog({
+				title: 'Batch List',
+				fields: batchListColumns,
+				primary_action_label: __('Select Batch'),
+				primary_action: () => {
+					const batches = this.batchDialog.get_values().batches;
+					const selectedBatches = batches.filter(batch => batch.__checked);
+					const entries = this.dialog.get_field('entries').grid;
+					selectedBatches.map((batch) => {
+						entries.add_new_row();
+						let newRow = entries.data[entries.data.length - 1];
+						newRow['batch_no'] = batch.batch_id;
+						newRow['custom_multiplier'] = batch.multiplier;
+						newRow['custom_qty2'] = 0;
+						newRow['qty'] = 0;
+						// fetch batch qty filtered by warehouse
+						this.fetch_batch_qty({ batch_no: batch.batch_id, warehouse: this.get_warehouse(), item_code: this.item.item_code }, (r) => {
+							newRow['batch_qty'] = r.message;
+							entries.refresh();
+						})
+					})
+					this.batchDialog.hide();
+				},
+				secondary_action_label: __("Cancel"),
+				secondary_action: () => this.batchDialog.hide(),
+			})
+
+			this.batchDialog.show();
+		})
+	}
+
 	update_total_roll() {
 		setTimeout(() => {
 			const grid_row_el = cur_dialog.wrapper[0].querySelectorAll('.grid-row[data-idx]')
@@ -747,20 +813,27 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 	}
 
 	update_total_qty() {
+		console.log('update total qty')
 		setTimeout(() => {
 			// console.log('update total qty2');
 			const grid_row_el = cur_dialog.wrapper[0].querySelectorAll('.grid-row[data-idx]')
+			console.log("🤔 ~ setTimeout ~ grid_row_el:", grid_row_el)
 			const available_idx = Array.from(grid_row_el, (el) => Number(el.getAttribute('data-idx')));
+			console.log("🤔 ~ setTimeout ~ available_idx:", available_idx)
 
 			const entries = cur_dialog.fields_dict.entries.get_value();
+			console.log("🤔 ~ setTimeout ~ entries:", entries)
 			const total_qty = entries.reduce((acc, cur) => {
 				if (available_idx.includes(cur.idx)) {
+					console.log(acc, cur)
 					return acc + cur.qty
 				} else {
 					return 0;
 				}
 			}, 0);
 			cur_dialog.fields_dict.total_qty.set_value(total_qty);
+			console.log("🤔 ~ setTimeout ~ total_qty:", total_qty)
+			cur_dialog.refresh();
 		}, 500);
 	}
 };
