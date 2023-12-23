@@ -849,33 +849,46 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		let total_qty = 0;
 		let total_qty2 = 0;
 
-		//> fetch data for Batch List
-		frappe.db.get_list('Batch', { filters: { "item_name": this.item.item_code }, fields: ['*'], limit: 500 }).then(batches => {
-			batches.map((batch) => {
+		const add_batches = (batches, batchIdx) => {
+			if (typeof batchIdx === 'number') {
+				const batch = batches[batchIdx];
 				this.fetch_batch_qty_in_warehouse({
 					batch_no: batch.batch_id,
 					warehouse: this.get_warehouse(),
 					item_code: this.item.item_code
-				},
-					(res) => {
-						const { qty, qty2 } = res.message;
-						batchGrid.add_new_row();
-						let batch_row = batchGrid.data[batchGrid.data.length - 1];
-						batch_row['batch_id'] = batch.batch_id;
-						batch_row['batch_qty'] = qty;
-						batch_row['multiplier'] = batch.multiplier;
-						batch_row['stock_uom'] = batch.stock_uom;
-						batch_row['qty2'] = qty2;
-						batchGrid.refresh();
+				}, (res) => {
+					const { qty, qty2 } = res.message;
+					batchGrid.add_new_row();
+					let batch_row = batchGrid.data[batchGrid.data.length - 1];
+					batch_row['batch_id'] = batch.batch_id;
+					batch_row['multiplier'] = batch.multiplier;
+					batch_row['stock_uom'] = batch.stock_uom;
+					batch_row['batch_qty'] = qty;
+					batch_row['qty2'] = qty2;
 
-						// update total qty & total roll
-						total_qty += qty;
+					// update total qty & total roll
+					total_qty += qty;
+					total_qty2 += qty2;
+
+					if (batches.length === batchIdx + 1) {
+						console.log("🤔 ~ add_batch_from_list_action ~ batches.length:", batches.length, batchIdx + 1)
 						totalQty.set_value(total_qty);
-						total_qty2 += qty2;
 						totalQty2.set_value(total_qty2);
-						// this.batchDialog.refresh();
-					})
-			})
+						batchGrid.refresh();
+					}
+
+					if (batches[batchIdx + 1]) {
+						add_batches(batches, batchIdx + 1)
+					}
+
+					// this.batchDialog.refresh();
+				})
+			}
+		}
+
+		//> fetch data for Batch List
+		frappe.db.get_list('Batch', { filters: { "item_name": this.item.item_code }, fields: ['*'], limit: 500, order_by: "name ASC" }).then(batches => {
+			add_batches(batches, 0);
 		});
 
 	}
