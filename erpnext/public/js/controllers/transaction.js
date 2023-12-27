@@ -497,9 +497,8 @@ erpnext.TransactionController = class TransactionController extends (
 	}
 
 	scan_barcode() {
-		const barcode_scanner = new erpnext.utils.BarcodeScanner({
-			frm: this.frm,
-		});
+		frappe.flags.dialog_set = false;
+		const barcode_scanner = new erpnext.utils.BarcodeScanner({ frm: this.frm });
 		barcode_scanner.process_scan();
 	}
 
@@ -606,6 +605,7 @@ erpnext.TransactionController = class TransactionController extends (
 				item.pricing_rules = "";
 				return this.frm.call({
 					method: "erpnext.stock.get_item_details.get_item_details",
+					child: item,
 					args: {
 						doc: me.frm.doc,
 						args: {
@@ -651,6 +651,7 @@ erpnext.TransactionController = class TransactionController extends (
 							cost_center: item.cost_center,
 							tax_category: me.frm.doc.tax_category,
 							item_tax_template: item.item_tax_template,
+							child_doctype: item.doctype,
 							child_docname: item.name,
 							is_old_subcontracting_flow:
 								me.frm.doc.is_old_subcontracting_flow,
@@ -660,19 +661,6 @@ erpnext.TransactionController = class TransactionController extends (
 					callback: function (r) {
 						if (!r.exc) {
 							frappe.run_serially([
-								() => {
-									var child = locals[cdt][cdn];
-									var std_field_list = ["doctype"]
-										.concat(frappe.model.std_fields_list)
-										.concat(frappe.model.child_table_field_list);
-
-									for (var key in r.message) {
-										if (std_field_list.indexOf(key) === -1) {
-											if (key === "qty" && child[key]) continue;
-											child[key] = r.message[key];
-										}
-									}
-								},
 								() => {
 									var d = locals[cdt][cdn];
 									me.add_taxes_from_item_tax_template(
