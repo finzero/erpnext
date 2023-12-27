@@ -846,8 +846,8 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 					let newRow = entries.data[entries.data.length - 1];
 					newRow['batch_no'] = batch.batch_id;
 					newRow['custom_multiplier'] = batch.multiplier;
-					newRow['custom_qty2'] = 0;
-					newRow['qty'] = 0;
+					newRow['custom_qty2'] = 1;
+					newRow['qty'] = batch.multiplier;
 					newRow['batch_qty'] = batch.batch_qty;
 					entries.refresh();
 					// fetch batch qty filtered by warehouse
