@@ -761,6 +761,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 	}
 
 	add_batch_from_list_action() {
+		let prev_has_qty = null;
 		const batchListColumns = [
 			{
 				fieldtype: "Data",
@@ -768,6 +769,21 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 				fieldname: "item_code",
 				label: __("Nama Item"),
 				default: this.item.item_code
+			},
+			{
+				fieldtype: "Check",
+				fieldname: "has_qty",
+				label: __("Has Quantity"),
+				default: true,
+				onchange: (event) => {
+					const has_qty = event.target.checked ? 1 : 0;
+
+					//! handler coz onchange trigger twice
+					if (prev_has_qty !== has_qty) {
+						fetchBatch({ "item_name": this.item.item_code, qty2: [has_qty ? ">" : ">=", 0] });
+					}
+					prev_has_qty = has_qty;
+				}
 			},
 			{
 				fieldname: "batches",
@@ -870,26 +886,40 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		const add_batches = (batches, batchIdx) => {
 			if (typeof batchIdx === 'number') {
 				const batch = batches[batchIdx];
+
+				// reset total
+				if (batchIdx === 0) {
+					total_qty = 0;
+					total_qty2 = 0;
+				}
+
 				this.fetch_batch_qty_in_warehouse({
 					batch_no: batch.batch_id,
 					warehouse: this.get_warehouse(),
 					item_code: this.item.item_code
 				}, (res) => {
 					const { qty, qty2 } = res.message;
-					batchGrid.add_new_row();
-					let batch_row = batchGrid.data[batchGrid.data.length - 1];
-					batch_row['batch_id'] = batch.batch_id;
-					batch_row['multiplier'] = batch.multiplier;
-					batch_row['stock_uom'] = batch.stock_uom;
-					batch_row['batch_qty'] = qty;
-					batch_row['qty2'] = qty2;
+					// batchGrid.add_new_row();
+					// let batch_row = batchGrid.data[batchGrid.data.length - 1];
+					// batch_row['batch_id'] = batch.batch_id;
+					// batch_row['multiplier'] = batch.multiplier;
+					// batch_row['stock_uom'] = batch.stock_uom;
+					// batch_row['batch_qty'] = qty;
+					// batch_row['qty2'] = qty2;
+
+					this.batchDialog.fields_dict.batches.df.data.push({
+						batch_id: batch.batch_id,
+						multiplier: batch.multiplier,
+						stock_uom: batch.stock_uom,
+						batch_qty: qty,
+						qty2: qty2
+					})
 
 					// update total qty & total roll
 					total_qty += qty;
 					total_qty2 += qty2;
 
 					if (batches.length === batchIdx + 1) {
-						console.log("🤔 ~ add_batch_from_list_action ~ batches.length:", batches.length, batchIdx + 1)
 						totalQty.set_value(total_qty);
 						totalQty2.set_value(total_qty2);
 						batchGrid.refresh();
@@ -900,15 +930,25 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 					}
 
 					// this.batchDialog.refresh();
+				}, error => {
+					console.log('error', error)
 				})
 			}
 		}
 
 		//> fetch data for Batch List
-		frappe.db.get_list('Batch', { filters: { "item_name": this.item.item_code }, fields: ['*'], limit: 500, order_by: "name ASC" }).then(batches => {
-			add_batches(batches, 0);
-		});
+		const fetchBatch = (filters) => {
+			// clear grid data
+			this.batchDialog.fields_dict.batches.df.data = [];
+			this.batchDialog.fields_dict.batches.grid.refresh();
 
+			frappe.db.get_list('Batch', { filters, fields: ['*'], limit: 500, order_by: "name ASC" }).then(batches => {
+				add_batches(batches, 0);
+			});
+		}
+
+		// default fetch data that has qty2
+		fetchBatch({ "item_name": this.item.item_code, qty2: [">", 0] });
 	}
 
 	update_total_roll() {
