@@ -950,7 +950,18 @@ erpnext.TransactionController = class TransactionController extends (
 	}
 
 	on_submit() {
-		refresh_field("items");
+		if (in_list(["Purchase Invoice", "Sales Invoice"], this.frm.doc.doctype)
+			&& !this.frm.doc.update_stock) {
+			return;
+		}
+
+		this.refresh_serial_batch_bundle_field();
+	}
+
+	refresh_serial_batch_bundle_field() {
+		frappe.route_hooks.after_submit = (frm_obj) => {
+			frm_obj.reload_doc();
+		}
 	}
 
 	update_qty(cdt, cdn) {
