@@ -771,7 +771,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 
 					//! handler coz onchange trigger twice
 					if (prev_has_qty !== has_qty) {
-						fetchBatch({ "item_name": this.item.item_code, qty2: [has_qty ? ">" : ">=", 0] });
+						fetchBatch({ "item": this.item.item_code, qty2: [has_qty ? ">" : ">=", 0] });
 					}
 					prev_has_qty = has_qty;
 				}
