@@ -939,7 +939,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		}
 
 		// default fetch data that has qty2
-		fetchBatch({ "item_name": this.item.item_code, qty2: [">", 0] });
+		fetchBatch({ "item": this.item.item_code, qty2: [">", 0] });
 	}
 
 	update_total_roll() {
