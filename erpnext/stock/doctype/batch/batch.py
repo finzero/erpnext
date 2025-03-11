@@ -380,20 +380,6 @@ def get_batches_custom(item_code, warehouse, has_qty2=None):
 	sle = frappe.qb.DocType("Stock Ledger Entry")
 	sabe = frappe.qb.DocType("Serial and Batch Entry")
 
-# 	SELECT  tsabe.batch_no, tsle.item_code, tsle.warehouse, serial_and_batch_bundle, qty ,SUM(tsabe.custom_qty2) qty2, tsabe.custom_uom2 , tsle.stock_uom 
-# FROM db_moeji.`tabStock Ledger Entry`  tsle 
-# JOIN db_moeji.`tabSerial and Batch Entry` tsabe 
-# ON tsabe.parent  = tsle.serial_and_batch_bundle
-# WHERE tsle.warehouse = 'Stores - FS'
-# AND tsle.item_code = 'BJ0001'
-# GROUP BY tsabe.batch_no 
-	# query = (
-	# 	frappe.qb.from_(batch)
-	# 	.select('*')
-	# )
-
-	# return query.run(as_dict=True)
-
 	query = (
 		frappe.qb.from_(sle)
 			.join(sabe)
