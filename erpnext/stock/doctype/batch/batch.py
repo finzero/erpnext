@@ -234,6 +234,7 @@ def get_batch_qty(
 
 	return batchwise_qty[batch_no]
 
+
 @frappe.whitelist()
 def get_batch_qty2(
 	batch_no=None,
@@ -282,7 +283,6 @@ def get_batch_qty2(
 	# print('batches',batches)
 	# return batchwise_qty[batch_no]
 	return {'qty': batchwise_qty[batch_no], 'qty2': batchwise_qty2[batch_no]}
-
 
 @frappe.whitelist()
 def get_batches_by_oldest(item_code, warehouse):
@@ -374,7 +374,91 @@ def make_batch_bundle(kwargs):
 		.name
 	)
 
+@frappe.whitelist()
+def get_batches_custom(item_code, warehouse, has_qty2=None):
+	batch = frappe.qb.DocType("Batch")
+	sle = frappe.qb.DocType("Stock Ledger Entry")
+	sabe = frappe.qb.DocType("Serial and Batch Entry")
 
+# 	SELECT  tsabe.batch_no, tsle.item_code, tsle.warehouse, serial_and_batch_bundle, qty ,SUM(tsabe.custom_qty2) qty2, tsabe.custom_uom2 , tsle.stock_uom 
+# FROM db_moeji.`tabStock Ledger Entry`  tsle 
+# JOIN db_moeji.`tabSerial and Batch Entry` tsabe 
+# ON tsabe.parent  = tsle.serial_and_batch_bundle
+# WHERE tsle.warehouse = 'Stores - FS'
+# AND tsle.item_code = 'BJ0001'
+# GROUP BY tsabe.batch_no 
+	# query = (
+	# 	frappe.qb.from_(batch)
+	# 	.select('*')
+	# )
+
+	# return query.run(as_dict=True)
+
+	query = (
+		frappe.qb.from_(sle)
+			.join(sabe)
+			.on(sle.serial_and_batch_bundle == sabe.parent) 
+			.select( 
+				sabe.batch_no, 
+				sabe.custom_multiplier, 
+				sle.warehouse, 
+				Sum(sabe.qty).as_("qty"), 
+				Sum(sabe.custom_qty2).as_("qty2"), 
+				sle.stock_uom
+			)
+			.where(
+				(sle.warehouse == warehouse)
+				& (sle.item_code == item_code)
+			)
+			.groupby(sabe.batch_no)
+	)
+
+	results = query.run(as_dict=True)
+
+	if has_qty2 == '0':
+
+		# select empty batch
+		query_empty_batch = (
+			frappe.qb.from_(batch)
+			.select(
+				batch.batch_id.as_("batch_no"),
+				batch.multiplier.as_("custom_multiplier"),
+				batch.qty2,
+				batch.batch_qty.as_("qty"),
+				batch.stock_uom
+			)
+			.where(
+				(batch.qty2 == 0.0)
+				& (batch.item == item_code)
+			)
+		)
+
+		empty_batch = query_empty_batch.run(as_dict=True);
+		# push empty batch to results
+		for batch in empty_batch:
+			results.append({
+				"batch_no": batch.batch_no,
+				"custom_multiplier": batch.custom_multiplier,
+				"warehouse": '',
+				"qty": batch.qty,
+				"qty2": batch.qty2,
+				"stock_uom": batch.stock_uom
+			})
+	
+
+	return results
+
+
+
+	# filtered_results = [
+  #   row for row in results
+  #   if (has_qty2 == "1" and row["qty2"] > 0)
+  #   or (has_qty2 == "0" and row["qty2"] >= 0)
+	# ]
+
+	# return filtered_results
+
+@frappe.whitelist()
 def get_batches(item_code, warehouse, qty=1, throw=False, serial_no=None):
 	from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos
 

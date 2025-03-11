@@ -7,6 +7,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		this.bundle = this.item?.is_rejected
 			? this.item.rejected_serial_and_batch_bundle
 			: this.item.serial_and_batch_bundle;
+		this.warehouse = '';
 
 		this.make();
 		this.render_data();
@@ -296,9 +297,9 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 				file_path: file_path,
 			},
 			callback: (r) => {
-				if (r.message.serial_nos && r.message.serial_nos.length) {
+				if (r.message.serial_nos?.length) {
 					this.set_data(r.message.serial_nos);
-				} else if (r.message.batch_nos && r.message.batch_nos.length) {
+				} else if (r.message.batch_nos?.length) {
 					this.set_data(r.message.batch_nos);
 				}
 			},
@@ -771,7 +772,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 
 					//! handler coz onchange trigger twice
 					if (prev_has_qty !== has_qty) {
-						fetchBatch({ "item": this.item.item_code, qty2: [has_qty ? ">" : ">=", 0] });
+						fetchBatch({ "item_code": this.item.item_code, has_qty2: has_qty, warehouse: this.item.warehouse });
 					}
 					prev_has_qty = has_qty;
 				}
@@ -877,6 +878,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 		const add_batches = (batches, batchIdx) => {
 			if (typeof batchIdx === 'number') {
 				const batch = batches[batchIdx];
+				console.log("🤔 ~ batch:", batch)
 
 				// reset total
 				if (batchIdx === 0) {
@@ -884,46 +886,27 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 					total_qty2 = 0;
 				}
 
-				this.fetch_batch_qty_in_warehouse({
-					batch_no: batch.batch_id,
-					warehouse: this.get_warehouse(),
-					item_code: this.item.item_code
-				}, (res) => {
-					const { qty, qty2 } = res.message;
-					// batchGrid.add_new_row();
-					// let batch_row = batchGrid.data[batchGrid.data.length - 1];
-					// batch_row['batch_id'] = batch.batch_id;
-					// batch_row['multiplier'] = batch.multiplier;
-					// batch_row['stock_uom'] = batch.stock_uom;
-					// batch_row['batch_qty'] = qty;
-					// batch_row['qty2'] = qty2;
-
-					this.batchDialog.fields_dict.batches.df.data.push({
-						batch_id: batch.batch_id,
-						multiplier: batch.multiplier,
-						stock_uom: batch.stock_uom,
-						batch_qty: qty,
-						qty2: qty2
-					})
-
-					// update total qty & total roll
-					total_qty += qty;
-					total_qty2 += qty2;
-
-					if (batches.length === batchIdx + 1) {
-						totalQty.set_value(total_qty);
-						totalQty2.set_value(total_qty2);
-						batchGrid.refresh();
-					}
-
-					if (batches[batchIdx + 1]) {
-						add_batches(batches, batchIdx + 1)
-					}
-
-					// this.batchDialog.refresh();
-				}, error => {
-					console.log('error', error)
+				this.batchDialog.fields_dict.batches.df.data.push({
+					batch_id: batch.batch_no,
+					multiplier: batch.custom_multiplier,
+					stock_uom: batch.stock_uom,
+					batch_qty: batch.qty,
+					qty2: batch.qty2
 				})
+
+				// update total qty & total roll
+				total_qty += batch.qty;
+				total_qty2 += batch.qty2;
+
+				if (batches.length === batchIdx + 1) {
+					totalQty.set_value(total_qty);
+					totalQty2.set_value(total_qty2);
+					batchGrid.refresh();
+				}
+
+				if (batches[batchIdx + 1]) {
+					add_batches(batches, batchIdx + 1)
+				}
 			}
 		}
 
@@ -933,13 +916,17 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 			this.batchDialog.fields_dict.batches.df.data = [];
 			this.batchDialog.fields_dict.batches.grid.refresh();
 
-			frappe.db.get_list('Batch', { filters, fields: ['*'], limit: 500, order_by: "name ASC" }).then(batches => {
-				add_batches(batches, 0);
-			});
+			frappe.call({
+				method: 'erpnext.stock.doctype.batch.batch.get_batches_custom',
+				args: filters,
+				callback: (r) => {
+					add_batches(r.message, 0);
+				}
+			})
 		}
 
 		// default fetch data that has qty2
-		fetchBatch({ "item": this.item.item_code, qty2: [">", 0] });
+		fetchBatch({ "item_code": this.item.item_code, warehouse: this.get_warehouse(), has_qty2: true });
 	}
 
 	update_total_roll() {
