@@ -396,6 +396,7 @@ def get_batches_custom(item_code, warehouse, has_qty2=None):
 				(sle.warehouse == warehouse)
 				& (sle.item_code == item_code)
 			)
+			.having(Sum(sabe.custom_qty2) > 0)
 			.groupby(sabe.batch_no)
 	)
 
