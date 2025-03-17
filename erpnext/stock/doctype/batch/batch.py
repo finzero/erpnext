@@ -383,8 +383,11 @@ def get_batches_custom(item_code, warehouse, has_qty2=None):
 	query = (
 		frappe.qb.from_(sle)
 			.join(sabe)
-			.on(sle.serial_and_batch_bundle == sabe.parent) 
+			.on(sle.serial_and_batch_bundle == sabe.parent)
+			.join(batch)
+			.on(batch.batch_id == sabe.batch_no)
 			.select( 
+				sle.serial_and_batch_bundle,
 				sabe.batch_no, 
 				sabe.custom_multiplier, 
 				sle.warehouse, 
@@ -395,6 +398,7 @@ def get_batches_custom(item_code, warehouse, has_qty2=None):
 			.where(
 				(sle.warehouse == warehouse)
 				& (sle.item_code == item_code)
+				& (batch.batch_qty > 0)
 			)
 			.having(Sum(sabe.custom_qty2) > 0)
 			.groupby(sabe.batch_no)
