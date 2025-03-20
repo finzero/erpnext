@@ -399,6 +399,7 @@ def get_batches_custom(item_code, warehouse, has_qty2=None):
 				(sle.warehouse == warehouse)
 				& (sle.item_code == item_code)
 				& (batch.batch_qty > 0)
+				& (sle.is_cancelled == 0)
 			)
 			.having(Sum(sabe.custom_qty2) > 0)
 			.groupby(sabe.batch_no)
@@ -438,16 +439,6 @@ def get_batches_custom(item_code, warehouse, has_qty2=None):
 	
 
 	return results
-
-
-
-	# filtered_results = [
-  #   row for row in results
-  #   if (has_qty2 == "1" and row["qty2"] > 0)
-  #   or (has_qty2 == "0" and row["qty2"] >= 0)
-	# ]
-
-	# return filtered_results
 
 @frappe.whitelist()
 def get_batches(item_code, warehouse, qty=1, throw=False, serial_no=None):
